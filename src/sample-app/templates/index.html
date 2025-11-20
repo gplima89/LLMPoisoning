@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HR Chatbot - LLM Poisoning Workshop</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 800px;
+            width: 100%;
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        .warning {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 20px 30px;
+            border-radius: 5px;
+        }
+        
+        .warning strong {
+            color: #856404;
+        }
+        
+        .chat-container {
+            padding: 30px;
+            height: 400px;
+            overflow-y: auto;
+            background: #f8f9fa;
+        }
+        
+        .message {
+            margin-bottom: 20px;
+            display: flex;
+            align-items: flex-start;
+        }
+        
+        .message.user {
+            justify-content: flex-end;
+        }
+        
+        .message-content {
+            max-width: 70%;
+            padding: 15px;
+            border-radius: 10px;
+            position: relative;
+        }
+        
+        .message.user .message-content {
+            background: #667eea;
+            color: white;
+            border-bottom-right-radius: 0;
+        }
+        
+        .message.bot .message-content {
+            background: white;
+            color: #333;
+            border-bottom-left-radius: 0;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        
+        .message-sources {
+            font-size: 12px;
+            color: #666;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #eee;
+        }
+        
+        .input-container {
+            padding: 20px 30px 30px;
+            background: white;
+            border-top: 1px solid #eee;
+        }
+        
+        .input-wrapper {
+            display: flex;
+            gap: 10px;
+        }
+        
+        #userInput {
+            flex: 1;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+        
+        #userInput:focus {
+            border-color: #667eea;
+        }
+        
+        #sendBtn {
+            padding: 15px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: transform 0.2s;
+        }
+        
+        #sendBtn:hover {
+            transform: translateY(-2px);
+        }
+        
+        #sendBtn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+        
+        .loading.active {
+            display: block;
+        }
+        
+        .example-queries {
+            margin-top: 15px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+        
+        .example-queries h4 {
+            margin-bottom: 10px;
+            color: #333;
+            font-size: 14px;
+        }
+        
+        .example-query {
+            display: inline-block;
+            margin: 5px;
+            padding: 8px 15px;
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+        
+        .example-query:hover {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+        
+        .status-indicator {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+        
+        .status-vulnerable {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .status-protected {
+            background: #28a745;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 HR Chatbot</h1>
+            <p>Ask me about company policies and guidelines</p>
+            <div class="status-indicator status-vulnerable" id="statusIndicator">
+                VULNERABLE MODE
+            </div>
+        </div>
+        
+        <div class="warning">
+            <strong>⚠️ Workshop Demo:</strong> This is a deliberately vulnerable application for educational purposes. 
+            Do NOT use in production!
+        </div>
+        
+        <div class="chat-container" id="chatContainer">
+            <div class="message bot">
+                <div class="message-content">
+                    Hello! I'm your HR assistant. I can help answer questions about company policies, 
+                    security guidelines, and employee procedures. What would you like to know?
+                </div>
+            </div>
+        </div>
+        
+        <div class="input-container">
+            <div class="example-queries">
+                <h4>Try these example questions:</h4>
+                <span class="example-query" onclick="setQuery('What is the password policy?')">Password policy</span>
+                <span class="example-query" onclick="setQuery('Is MFA required?')">MFA requirements</span>
+                <span class="example-query" onclick="setQuery('How do I reset my password?')">Password reset</span>
+                <span class="example-query" onclick="setQuery('Can I share credentials?')">Credential sharing</span>
+            </div>
+            
+            <div class="input-wrapper">
+                <input 
+                    type="text" 
+                    id="userInput" 
+                    placeholder="Ask a question about HR policies..."
+                    onkeypress="handleKeyPress(event)"
+                />
+                <button id="sendBtn" onclick="sendMessage()">Send</button>
+            </div>
+            
+            <div class="loading" id="loading">
+                <p>🤔 Thinking...</p>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        function addMessage(text, isUser, sources = []) {
+            const chatContainer = document.getElementById('chatContainer');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${isUser ? 'user' : 'bot'}`;
+            
+            let content = `<div class="message-content">${text}`;
+            if (!isUser && sources.length > 0) {
+                content += `<div class="message-sources">📚 Sources: ${sources.join(', ')}</div>`;
+            }
+            content += `</div>`;
+            
+            messageDiv.innerHTML = content;
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+        
+        async function sendMessage() {
+            const input = document.getElementById('userInput');
+            const sendBtn = document.getElementById('sendBtn');
+            const loading = document.getElementById('loading');
+            const question = input.value.trim();
+            
+            if (!question) return;
+            
+            // Add user message
+            addMessage(question, true);
+            input.value = '';
+            
+            // Show loading
+            sendBtn.disabled = true;
+            loading.classList.add('active');
+            
+            try {
+                const response = await fetch('/api/ask', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ question: question })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    addMessage(data.answer, false, data.sources || []);
+                } else {
+                    addMessage('❌ Error: ' + (data.error || 'Unknown error occurred'), false);
+                }
+            } catch (error) {
+                addMessage('❌ Failed to get response. Please try again.', false);
+                console.error('Error:', error);
+            } finally {
+                sendBtn.disabled = false;
+                loading.classList.remove('active');
+            }
+        }
+        
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+        
+        function setQuery(query) {
+            document.getElementById('userInput').value = query;
+            document.getElementById('userInput').focus();
+        }
+        
+        // Load system status
+        async function loadStatus() {
+            try {
+                const response = await fetch('/api/stats');
+                const data = await response.json();
+                
+                const indicator = document.getElementById('statusIndicator');
+                if (data.protections_enabled) {
+                    indicator.className = 'status-indicator status-protected';
+                    indicator.textContent = 'PROTECTED MODE';
+                }
+            } catch (error) {
+                console.error('Failed to load status:', error);
+            }
+        }
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            loadStatus();
+            document.getElementById('userInput').focus();
+        });
+    </script>
+</body>
+</html>
