@@ -1,0 +1,54 @@
+# Azure AI Services
+openai>=1.12.0
+azure-ai-openai>=1.0.0
+azure-search-documents>=11.4.0
+azure-identity>=1.15.0
+azure-core>=1.29.0
+
+# Azure Storage and Key Vault
+azure-storage-blob>=12.19.0
+azure-keyvault-secrets>=4.7.0
+
+# Monitoring and Logging
+azure-monitor-opentelemetry>=1.2.0
+opencensus-ext-azure>=1.1.13
+applicationinsights>=0.11.10
+
+# Web Framework
+Flask>=3.0.0
+flask-cors>=4.0.0
+
+# Data Processing
+pandas>=2.1.0
+numpy>=1.24.0
+
+# Environment and Configuration
+python-dotenv>=1.0.0
+
+# Testing
+pytest>=7.4.0
+pytest-mock>=3.12.0
+pytest-asyncio>=0.21.0
+
+# Code Quality
+pylint>=3.0.0
+black>=23.12.0
+flake8>=7.0.0
+
+# Security
+cryptography>=41.0.0
+pyjwt>=2.8.0
+
+# Utilities
+requests>=2.31.0
+tenacity>=8.2.0
+colorama>=0.4.6
+
+# Jupyter (optional, for notebooks)
+jupyter>=1.0.0
+ipykernel>=6.27.0
+notebook>=7.0.0
+
+# LangChain (optional, for advanced scenarios)
+langchain>=0.1.0
+langchain-openai>=0.0.5
